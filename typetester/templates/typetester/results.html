@@ -1,0 +1,102 @@
+   {% extends 'typetester/base.html' %}
+
+{% block title %}Таблица лидеров - TypeMaster{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto;">
+    <h1 style="text-align: center; margin-bottom: 2rem; color: #333;">
+        <i class="fas fa-trophy"></i> Таблица лидеров
+    </h1>
+    
+    <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 3rem; flex-wrap: wrap;">
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center;">
+            <div style="font-size: 1.2rem; color: #666;">Всего участников</div>
+            <div style="font-size: 2.5rem; font-weight: bold; color: #4a6cf7;">{{ total_users }}</div>
+        </div>
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center;">
+            <div style="font-size: 1.2rem; color: #666;">Всего тестов</div>
+            <div style="font-size: 2.5rem; font-weight: bold; color: #4a6cf7;">{{ total_tests }}</div>
+        </div>
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center;">
+            <div style="font-size: 1.2rem; color: #666;">Средний WPM</div>
+            <div style="font-size: 2.5rem; font-weight: bold; color: #4a6cf7;">{{ avg_wpm }}</div>
+        </div>
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center;">
+            <div style="font-size: 1.2rem; color: #666;">Рекорд WPM</div>
+            <div style="font-size: 2.5rem; font-weight: bold; color: #4a6cf7;">{{ max_wpm }}</div>
+        </div>
+    </div>
+    
+    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #4a6cf7; color: white;">
+                    <th style="padding: 1rem; text-align: left;">#</th>
+                    <th style="padding: 1rem; text-align: left;">Пользователь</th>
+                    <th style="padding: 1rem; text-align: left;">WPM</th>
+                    <th style="padding: 1rem; text-align: left;">Точность</th>
+                    <th style="padding: 1rem; text-align: left;">Время</th>
+                    <th style="padding: 1rem; text-align: left;">Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                {% if forloop.counter <= 3 %}
+                <tr style="border-bottom: 1px solid #eee; background: #fff9e6;">
+                {% else %}
+                <tr style="border-bottom: 1px solid #eee;">
+                {% endif %}
+                    <td style="padding: 1rem;">
+                        {% if forloop.counter == 1 %}
+                            <span style="color: gold; font-size: 1.2rem;">🥇</span>
+                        {% elif forloop.counter == 2 %}
+                            <span style="color: silver; font-size: 1.2rem;">🥈</span>
+                        {% elif forloop.counter == 3 %}
+                            <span style="color: #cd7f32; font-size: 1.2rem;">🥉</span>
+                        {% else %}
+                            {{ forloop.counter }}
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if result.user %}
+                            {{ result.user.username }}
+                        {% else %}
+                            Аноним
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; font-weight: bold; color: #4a6cf7;">
+                        {{ result.wpm }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {{ result.accuracy }}%
+                    </td>
+                    <td style="padding: 1rem;">
+                        {{ result.time_seconds }} сек
+                    </td>
+                    <td style="padding: 1rem; color: #666;">
+                        {{ result.created_at|date:"d.m.Y H:i" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 2rem; text-align: center; color: #666;">
+                        Пока нет результатов. Будьте первым!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="text-align: center; margin-top: 3rem;">
+        <a href="{% url 'typing_test' %}?difficulty=medium" class="btn" style="font-size: 1.1rem; padding: 1rem 2rem;">
+            <i class="fas fa-keyboard"></i> Попробовать тест
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'my_results' %}" class="btn btn-secondary" style="margin-left: 1rem;">
+            <i class="fas fa-chart-line"></i> Мои результаты
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

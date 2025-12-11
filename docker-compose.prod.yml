@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD}
+      - MSSQL_PID=Express
+    volumes:
+      - db_data:/var/opt/mssql
+    restart: always
+    env_file:
+      - .env
+
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 --workers 4 type_master.wsgi:application
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      - db
+    restart: always
+    env_file:
+      - .env
+
+  nginx:
+    build: ./docker/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - static_volume:/app/staticfiles
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    restart: always
+
+volumes:
+  db_data:
+  static_volume:
+  media_volume:

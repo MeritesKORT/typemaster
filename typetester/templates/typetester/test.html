@@ -1,0 +1,452 @@
+{% extends 'typetester/base.html' %}
+
+{% block title %}Тест скорости печати{% endblock %}
+
+{% block extra_css %}
+<style>
+    .test-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .stats-bar {
+        display: flex;
+        justify-content: space-between;
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #4a6cf7;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .text-display {
+        background: #f8f9fa;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        font-size: 1.2rem;
+        line-height: 1.6;
+        min-height: 150px;
+        border: 2px solid #e9ecef;
+    }
+    
+    .text-to-type {
+        color: #666;
+    }
+    
+    .typed-text {
+        color: #333;
+        font-weight: 500;
+    }
+    
+    .current-char {
+        background: #4a6cf7;
+        color: white;
+        padding: 0 2px;
+        border-radius: 3px;
+    }
+    
+    .error-char {
+        background: #dc3545;
+        color: white;
+        padding: 0 2px;
+        border-radius: 3px;
+        text-decoration: line-through;
+    }
+    
+    .text-input {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.2rem;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .text-input:focus {
+        outline: none;
+        border-color: #4a6cf7;
+    }
+    
+    .controls {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn-restart {
+        background: #6c757d;
+    }
+    
+    .results-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    
+    .results-content {
+        background: white;
+        padding: 3rem;
+        border-radius: 15px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+    }
+    
+    .result-score {
+        font-size: 4rem;
+        font-weight: bold;
+        color: #4a6cf7;
+        margin: 1rem 0;
+    }
+    
+    .result-details {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+    
+    .result-item {
+        text-align: center;
+    }
+    
+    .result-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .result-label {
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-container">
+    <h1 style="text-align: center; margin-bottom: 2rem; color: #333;">
+        Тест скорости печати
+    </h1>
+    
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value" id="timer">0.0</div>
+            <div class="stat-label">Время (сек)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="wpm">0</div>
+            <div class="stat-label">WPM</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="accuracy">100%</div>
+            <div class="stat-label">Точность</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="errors">0</div>
+            <div class="stat-label">Ошибки</div>
+        </div>
+    </div>
+    
+    <div class="text-display" id="textDisplay">
+        <span id="textToType">{{ text }}</span>
+    </div>
+    
+    <textarea 
+        id="textInput" 
+        class="text-input" 
+        placeholder="Начните печатать здесь..."
+        rows="3"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+    ></textarea>
+    
+    <div class="controls">
+        <button class="btn" onclick="startTest()" id="startBtn">
+            <i class="fas fa-play"></i> Начать
+        </button>
+        <button class="btn btn-restart" onclick="restartTest()">
+            <i class="fas fa-redo"></i> Заново
+        </button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">
+            <i class="fas fa-home"></i> На главную
+        </a>
+    </div>
+    
+    <div style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
+        <p><i class="fas fa-lightbulb"></i> Совет: Не смотрите на клавиатуру, старайтесь печатать вслепую</p>
+        <p><i class="fas fa-lightbulb"></i> Текущие настройки: {{ difficulty|title }} уровень, {{ language|upper }} язык</p>
+    </div>
+</div>
+
+<div class="results-modal" id="resultsModal">
+    <div class="results-content">
+        <h2>Тест завершен! 🎉</h2>
+        <div class="result-score" id="finalWPM">0</div>
+        <p style="color: #666; margin-bottom: 2rem;">слов в минуту</p>
+        
+        <div class="result-details">
+            <div class="result-item">
+                <div class="result-value" id="finalAccuracy">100%</div>
+                <div class="result-label">Точность</div>
+            </div>
+            <div class="result-item">
+                <div class="result-value" id="finalTime">0.0</div>
+                <div class="result-label">Время</div>
+            </div>
+            <div class="result-item">
+                <div class="result-value" id="finalErrors">0</div>
+                <div class="result-label">Ошибки</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <button class="btn" onclick="restartTest()" style="margin-right: 1rem;">
+                <i class="fas fa-redo"></i> Еще раз
+            </button>
+            <a href="{% url 'leaderboard' %}" class="btn btn-secondary">
+                <i class="fas fa-trophy"></i> Таблица лидеров
+            </a>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="originalText" value="{{ text }}">
+<input type="hidden" id="textId" value="{{ text_id|default:'' }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let startTime = null;
+    let timerInterval = null;
+    let isTestRunning = false;
+    let errors = 0;
+    let originalText = document.getElementById('originalText').value;
+    let currentText = '';
+    
+    function startTest() {
+        if (!isTestRunning) {
+            startTime = new Date();
+            isTestRunning = true;
+            document.getElementById('textInput').focus();
+            document.getElementById('startBtn').innerHTML = '<i class="fas fa-pause"></i> Пауза';
+            document.getElementById('startBtn').onclick = pauseTest;
+            
+            timerInterval = setInterval(updateTimer, 100);
+        }
+    }
+    
+    function pauseTest() {
+        if (isTestRunning) {
+            clearInterval(timerInterval);
+            isTestRunning = false;
+            document.getElementById('startBtn').innerHTML = '<i class="fas fa-play"></i> Продолжить';
+            document.getElementById('startBtn').onclick = startTest;
+        }
+    }
+    
+    function restartTest() {
+        clearInterval(timerInterval);
+        isTestRunning = false;
+        startTime = null;
+        errors = 0;
+        currentText = '';
+        
+        document.getElementById('textInput').value = '';
+        document.getElementById('timer').textContent = '0.0';
+        document.getElementById('wpm').textContent = '0';
+        document.getElementById('accuracy').textContent = '100%';
+        document.getElementById('errors').textContent = '0';
+        document.getElementById('startBtn').innerHTML = '<i class="fas fa-play"></i> Начать';
+        document.getElementById('startBtn').onclick = startTest;
+        
+        document.getElementById('resultsModal').style.display = 'none';
+        updateTextDisplay();
+    }
+    
+    function updateTimer() {
+        if (startTime && isTestRunning) {
+            let currentTime = new Date();
+            let elapsed = (currentTime - startTime) / 1000;
+            document.getElementById('timer').textContent = elapsed.toFixed(1);
+            
+            // Обновляем WPM
+            let words = currentText.trim().split(/\s+/).length;
+            let wpm = (words / elapsed * 60) || 0;
+            document.getElementById('wpm').textContent = Math.round(wpm);
+            
+            // Обновляем точность
+            let accuracy = 100;
+            if (currentText.length > 0) {
+                let correctChars = 0;
+                for (let i = 0; i < Math.min(currentText.length, originalText.length); i++) {
+                    if (currentText[i] === originalText[i]) {
+                        correctChars++;
+                    }
+                }
+                accuracy = (correctChars / originalText.length * 100) || 100;
+            }
+            document.getElementById('accuracy').textContent = Math.round(accuracy) + '%';
+        }
+    }
+    
+    function updateTextDisplay() {
+        let display = document.getElementById('textToType');
+        let html = '';
+        
+        for (let i = 0; i < originalText.length; i++) {
+            if (i < currentText.length) {
+                if (currentText[i] === originalText[i]) {
+                    html += `<span class="typed-text">${originalText[i]}</span>`;
+                } else {
+                    html += `<span class="error-char">${originalText[i]}</span>`;
+                }
+            } else if (i === currentText.length) {
+                html += `<span class="current-char">${originalText[i]}</span>`;
+            } else {
+                html += `<span class="text-to-type">${originalText[i]}</span>`;
+            }
+        }
+        
+        display.innerHTML = html;
+    }
+    
+    function checkTestCompletion() {
+        if (currentText === originalText) {
+            clearInterval(timerInterval);
+            isTestRunning = false;
+            
+            let endTime = new Date();
+            let elapsed = (endTime - startTime) / 1000;
+            let words = currentText.trim().split(/\s+/).length;
+            let wpm = Math.round((words / elapsed * 60) || 0);
+            
+            // Рассчитываем точность
+            let correctChars = 0;
+            for (let i = 0; i < currentText.length; i++) {
+                if (currentText[i] === originalText[i]) {
+                    correctChars++;
+                }
+            }
+            let accuracy = Math.round((correctChars / originalText.length * 100) || 100);
+            
+            // Показываем результаты
+            document.getElementById('finalWPM').textContent = wpm;
+            document.getElementById('finalAccuracy').textContent = accuracy + '%';
+            document.getElementById('finalTime').textContent = elapsed.toFixed(1);
+            document.getElementById('finalErrors').textContent = errors;
+            document.getElementById('resultsModal').style.display = 'flex';
+            
+            // Сохраняем результат на сервер
+            saveResult(wpm, accuracy, elapsed, errors);
+        }
+    }
+    
+    function saveResult(wpm, accuracy, time, errorCount) {
+        fetch('{% url "save_result" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                typed_text: currentText,
+                original_text: originalText,
+                time_seconds: time,
+                mistakes: errorCount,
+                text_id: document.getElementById('textId').value || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Result saved:', data);
+        })
+        .catch(error => {
+            console.error('Error saving result:', error);
+        });
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Обработчик ввода текста
+    document.getElementById('textInput').addEventListener('input', function(e) {
+        if (!isTestRunning && startTime === null) {
+            startTest();
+        }
+        
+        currentText = e.target.value;
+        
+        // Подсчет ошибок
+        errors = 0;
+        for (let i = 0; i < currentText.length; i++) {
+            if (i >= originalText.length || currentText[i] !== originalText[i]) {
+                errors++;
+            }
+        }
+        // Добавляем ошибки за пропущенные символы
+        if (currentText.length < originalText.length) {
+            errors += (originalText.length - currentText.length);
+        }
+        
+        document.getElementById('errors').textContent = errors;
+        updateTextDisplay();
+        checkTestCompletion();
+    });
+    
+    // Блокируем клавиши, которые могут помешать тесту
+    document.getElementById('textInput').addEventListener('keydown', function(e) {
+        // Разрешаем только Backspace, Delete, стрелки и обычные символы
+        if (e.key === 'Tab' || (e.ctrlKey && e.key === 'z')) {
+            e.preventDefault();
+        }
+    });
+    
+    // Автофокус на поле ввода при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('textInput').focus();
+        updateTextDisplay();
+    });
+</script>
+{% endblock %}

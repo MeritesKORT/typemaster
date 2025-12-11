@@ -1,0 +1,87 @@
+{% extends 'typetester/base.html' %}
+
+{% block title %}Главная - TypeMaster{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 3rem 1rem;">
+    <h1 style="font-size: 3rem; color: #4a6cf7; margin-bottom: 1rem;">
+        <i class="fas fa-keyboard"></i> TypeMaster
+    </h1>
+    <p style="font-size: 1.2rem; color: #666; max-width: 600px; margin: 0 auto 2rem;">
+        Проверьте свою скорость печати, улучшите навыки и сравните результаты с другими!
+    </p>
+    
+    <div style="display: flex; justify-content: center; gap: 2rem; margin: 3rem 0; flex-wrap: wrap;">
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); min-width: 200px;">
+            <div style="font-size: 2.5rem; color: #4a6cf7; font-weight: bold;">{{ total_tests }}</div>
+            <div style="color: #666;">Всего тестов</div>
+        </div>
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); min-width: 200px;">
+            <div style="font-size: 2.5rem; color: #4a6cf7; font-weight: bold;">{{ avg_wpm }}</div>
+            <div style="color: #666;">Средний WPM</div>
+        </div>
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); min-width: 200px;">
+            <div style="font-size: 2.5rem; color: #4a6cf7; font-weight: bold;">{{ best_wpm }}</div>
+            <div style="color: #666;">Лучший WPM</div>
+        </div>
+    </div>
+    
+    <div style="background: white; padding: 3rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+        <h2 style="margin-bottom: 2rem; color: #333;">Начать тест</h2>
+        
+        <form action="{% url 'typing_test' %}" method="get" style="margin-bottom: 2rem;">
+            <div style="margin-bottom: 1.5rem; text-align: left;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Сложность:</label>
+                <select name="difficulty" style="width: 100%; padding: 0.8rem; border: 2px solid #ddd; border-radius: 5px; font-size: 1rem;">
+                    <option value="easy">Легкий</option>
+                    <option value="medium" selected>Средний</option>
+                    <option value="hard">Сложный</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 2rem; text-align: left;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Язык:</label>
+                <select name="language" style="width: 100%; padding: 0.8rem; border: 2px solid #ddd; border-radius: 5px; font-size: 1rem;">
+                    <option value="ru" selected>Русский</option>
+                    <option value="en">Английский</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                <i class="fas fa-play"></i> Начать тест
+            </button>
+        </form>
+        
+        <div style="margin-top: 2rem; color: #666;">
+            <p><i class="fas fa-info-circle"></i> WPM (Words Per Minute) - количество слов в минуту</p>
+            <p><i class="fas fa-info-circle"></i> Точность - процент правильно набранных символов</p>
+        </div>
+    </div>
+    
+    <div style="margin-top: 4rem;">
+        <h2 style="margin-bottom: 2rem; color: #333;">Как это работает?</h2>
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; max-width: 250px; text-align: center;">
+                <div style="font-size: 2rem; color: #4a6cf7; margin-bottom: 1rem;">1</div>
+                <h3>Выберите настройки</h3>
+                <p>Выберите сложность и язык текста для тестирования</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; max-width: 250px; text-align: center;">
+                <div style="font-size: 2rem; color: #4a6cf7; margin-bottom: 1rem;">2</div>
+                <h3>Печатайте текст</h3>
+                <p>Набирайте предложенный текст как можно быстрее и точнее</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; max-width: 250px; text-align: center;">
+                <div style="font-size: 2rem; color: #4a6cf7; margin-bottom: 1rem;">3</div>
+                <h3>Получите результат</h3>
+                <p>Узнайте свою скорость (WPM) и точность печати</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; max-width: 250px; text-align: center;">
+                <div style="font-size: 2rem; color: #4a6cf7; margin-bottom: 1rem;">4</div>
+                <h3>Сравните с другими</h3>
+                <p>Посмотрите свою позицию в таблице лидеров</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

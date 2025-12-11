@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+ENV/
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temp files
+logs/
+*.log
+*.tmp
+*.session
+
+# Docker
+.dockerignore
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (если используешь SQLite)
+*.sqlite3
+*.db
+
+# Coverage reports
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+locale/
+
+# Sphinx documentation
+docs/_build/
+
+# PyInstaller
+# Usually these files are written by a python script from a template
+# Don't add them to source control.
+*.spec
+
+# Installer logs
+install_log.txt
+install_log.txt.zip
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+locale/
+
+# Sphinx documentation
+docs/_build/
+
+# PyInstaller
+# Usually these files are written by a python script from a template
+# Don't add them to source control.
+*.spec
+
+# Installer logs
+install_log.txt
+install_log.txt.zip
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml

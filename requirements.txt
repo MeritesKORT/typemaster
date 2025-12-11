@@ -1,0 +1,16 @@
+# Django
+Django==4.2.7
+mssql-django
+
+# Database
+pyodbc==5.0.1
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.5.0
+
+# Environment
+python-dotenv==1.0.0
+
+# Security
+django-cors-headers==4.2.0
