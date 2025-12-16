@@ -37,7 +37,7 @@ def typing_test(request):
         # Дефолтные тексты если нет в базе
         default_texts = {
             ('easy', 'ru'): "Привет! Это тест скорости печати. Начните вводить этот текст как можно быстрее.",
-            ('medium', 'ru'): "Программирование — это искусство создания инструкций для компьютера. Каждая строка кода важна.",
+            ('medium', 'ru'): "Программирование - это искусство создания инструкций для компьютера. Каждая строка кода важна.",
             ('hard', 'ru'): "Квантовые компьютеры используют принципы квантовой механики для выполнения вычислений.",
             ('easy', 'en'): "The quick brown fox jumps over the lazy dog. This sentence uses every letter.",
             ('medium', 'en'): "Python is a popular programming language known for its simplicity and readability.",
