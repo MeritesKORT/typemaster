@@ -250,12 +250,12 @@
     let timerInterval = null;
     let isTestRunning = false;
     let totalErrors = 0;
-    let hasTypedChar = [];     // Был ли введён символ на позиции i
+    let hasTypedChar = [];     // Вводился ли символ на позиции i
     let hasError = [];         // Была ли ошибка зафиксирована на позиции i
     let originalText = '';
     let currentText = '';
 
-    // Инициализация при загрузке
+    // Инициализация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function () {
         const originalTextarea = document.getElementById('originalText');
         if (originalTextarea) {
@@ -297,6 +297,9 @@
         document.getElementById('textInput').value = '';
         document.getElementById('timer').textContent = '0.0';
         document.getElementById('wpm').textContent = '0';
+        if (document.getElementById('cps')) {
+            document.getElementById('cps').textContent = '0.0';
+        }
         document.getElementById('accuracy').textContent = '100%';
         document.getElementById('errors').textContent = '0';
         document.getElementById('startBtn').innerHTML = '<i class="fas fa-play"></i> Начать';
@@ -312,21 +315,26 @@
         const elapsed = (currentTime - startTime) / 1000;
         document.getElementById('timer').textContent = elapsed.toFixed(1);
 
-        const words = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
-        const wpm = words > 0 ? Math.round((words / elapsed) * 60) : 0;
+        const charsTyped = currentText.length;
+
+        // CPS — символы в секунду
+        const cps = elapsed > 0 ? charsTyped / elapsed : 0;
+        if (document.getElementById('cps')) {
+            document.getElementById('cps').textContent = cps.toFixed(1);
+        }
+
+        // WPM — по стандарту: 1 слово = 5 символов
+        const wpm = elapsed > 0 ? Math.round((charsTyped / 5 / elapsed) * 60) : 0;
         document.getElementById('wpm').textContent = wpm;
 
-        // Точный подсчёт правильных символов
+        // Точность: % правильных среди введённых
         let correct = 0;
-        for (let i = 0; i < currentText.length && i < originalText.length; i++) {
+        for (let i = 0; i < charsTyped && i < originalText.length; i++) {
             if (hasTypedChar[i] && currentText[i] === originalText[i]) {
                 correct++;
             }
         }
-
-        const accuracy = currentText.length > 0
-            ? Math.round((correct / currentText.length) * 100)
-            : 100;
+        const accuracy = charsTyped > 0 ? Math.round((correct / charsTyped) * 100) : 100;
 
         document.getElementById('accuracy').textContent = accuracy + '%';
         document.getElementById('errors').textContent = totalErrors;
@@ -359,8 +367,9 @@
 
         const endTime = new Date();
         const elapsed = (endTime - startTime) / 1000;
-        const words = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
-        const wpm = words > 0 ? Math.round((words / elapsed) * 60) : 0;
+        const charsTyped = currentText.length;
+
+        const wpm = elapsed > 0 ? Math.round((charsTyped / 5 / elapsed) * 60) : 0;
 
         let correctChars = 0;
         for (let i = 0; i < originalText.length; i++) {
@@ -399,10 +408,10 @@
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Result saved:', data);
+            console.log('Результат сохранён:', data);
         })
         .catch(error => {
-            console.error('Error saving result:', error);
+            console.error('Ошибка при сохранении результата:', error);
         });
     }
 
@@ -412,7 +421,7 @@
             const cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                if (cookie.startsWith(name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
                 }
@@ -421,7 +430,6 @@
         return cookieValue;
     }
 
-    // Обработка ввода
     document.getElementById('textInput').addEventListener('input', function (e) {
         if (!isTestRunning && startTime === null) {
             startTest();
@@ -432,7 +440,7 @@
         const newLength = newValue.length;
 
         if (newLength < oldLength) {
-            // Удаление: обрезаем состояние
+            // Удаление символов
             currentText = newValue;
             hasTypedChar = hasTypedChar.slice(0, newLength);
             hasError = hasError.slice(0, newLength);
@@ -440,7 +448,7 @@
             return;
         }
 
-        // Добавление символов
+        // Добавление символов (только если не превышен исходный текст)
         if (newLength > oldLength && newLength <= originalText.length) {
             const pos = newLength - 1;
             const newChar = newValue[pos];
@@ -458,13 +466,13 @@
         currentText = newValue;
         updateTextDisplay();
 
-        // Завершение теста
+        // Автоматическое завершение при наборе всего текста
         if (currentText.length === originalText.length) {
             finishTest();
         }
     });
 
-    // Блокировка Tab
+    // Блокировка перехода по Tab
     document.getElementById('textInput').addEventListener('keydown', function (e) {
         if (e.key === 'Tab') {
             e.preventDefault();
