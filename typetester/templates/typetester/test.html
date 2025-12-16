@@ -249,10 +249,21 @@
     let startTime = null;
     let timerInterval = null;
     let isTestRunning = false;
-    let totalErrors = 0; // Фиксируем ошибки НАВСЕГДА
-    let hasTypedChar = []; // Отслеживаем, был ли введён каждый символ
-    let originalText = document.getElementById('originalText').value;
+    let totalErrors = 0;
+    let hasTypedChar = [];     // Был ли введён символ на позиции i
+    let hasError = [];         // Была ли ошибка зафиксирована на позиции i
+    let originalText = '';
     let currentText = '';
+
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', function () {
+        const originalTextarea = document.getElementById('originalText');
+        if (originalTextarea) {
+            originalText = originalTextarea.value;
+        }
+        document.getElementById('textInput').focus();
+        updateTextDisplay();
+    });
 
     function startTest() {
         if (!isTestRunning) {
@@ -280,6 +291,7 @@
         startTime = null;
         totalErrors = 0;
         hasTypedChar = [];
+        hasError = [];
         currentText = '';
 
         document.getElementById('textInput').value = '';
@@ -294,35 +306,37 @@
     }
 
     function updateTimer() {
-        if (startTime && isTestRunning) {
-            let currentTime = new Date();
-            let elapsed = (currentTime - startTime) / 1000;
-            document.getElementById('timer').textContent = elapsed.toFixed(1);
+        if (!startTime || !isTestRunning) return;
 
-            let words = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
-            let wpm = words > 0 ? Math.round((words / elapsed) * 60) : 0;
-            document.getElementById('wpm').textContent = wpm;
+        const currentTime = new Date();
+        const elapsed = (currentTime - startTime) / 1000;
+        document.getElementById('timer').textContent = elapsed.toFixed(1);
 
-            let accuracy = 100;
-            if (currentText.length > 0) {
-                let correct = 0;
-                for (let i = 0; i < Math.min(currentText.length, originalText.length); i++) {
-                    if (hasTypedChar[i] && currentText[i] === originalText[i]) {
-                        correct++;
-                    }
-                }
-                // Но для отображения в реальном времени используем упрощённый расчёт
-                accuracy = Math.max(0, (currentText.length - totalErrors) / originalText.length * 100);
+        const words = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
+        const wpm = words > 0 ? Math.round((words / elapsed) * 60) : 0;
+        document.getElementById('wpm').textContent = wpm;
+
+        // Точный подсчёт правильных символов
+        let correct = 0;
+        for (let i = 0; i < currentText.length && i < originalText.length; i++) {
+            if (hasTypedChar[i] && currentText[i] === originalText[i]) {
+                correct++;
             }
-            document.getElementById('accuracy').textContent = Math.round(accuracy) + '%';
-            document.getElementById('errors').textContent = totalErrors;
         }
+
+        const accuracy = currentText.length > 0
+            ? Math.round((correct / currentText.length) * 100)
+            : 100;
+
+        document.getElementById('accuracy').textContent = accuracy + '%';
+        document.getElementById('errors').textContent = totalErrors;
     }
 
     function updateTextDisplay() {
-        let display = document.getElementById('textToType');
-        let html = '';
+        const display = document.getElementById('textToType');
+        if (!display) return;
 
+        let html = '';
         for (let i = 0; i < originalText.length; i++) {
             if (i < currentText.length) {
                 if (hasTypedChar[i] && currentText[i] === originalText[i]) {
@@ -343,10 +357,10 @@
         clearInterval(timerInterval);
         isTestRunning = false;
 
-        let endTime = new Date();
-        let elapsed = (endTime - startTime) / 1000;
-        let words = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
-        let wpm = words > 0 ? Math.round((words / elapsed) * 60) : 0;
+        const endTime = new Date();
+        const elapsed = (endTime - startTime) / 1000;
+        const words = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
+        const wpm = words > 0 ? Math.round((words / elapsed) * 60) : 0;
 
         let correctChars = 0;
         for (let i = 0; i < originalText.length; i++) {
@@ -354,9 +368,8 @@
                 correctChars++;
             }
         }
-        let accuracy = Math.round((correctChars / originalText.length) * 100);
+        const accuracy = Math.round((correctChars / originalText.length) * 100);
 
-        // Используем totalErrors для финального отчёта
         document.getElementById('finalWPM').textContent = wpm;
         document.getElementById('finalAccuracy').textContent = accuracy + '%';
         document.getElementById('finalTime').textContent = elapsed.toFixed(1);
@@ -367,6 +380,9 @@
     }
 
     function saveResult(wpm, accuracy, time, errorCount) {
+        const textIdElem = document.getElementById('textId');
+        const textId = textIdElem ? textIdElem.value || null : null;
+
         fetch('{% url "save_result" %}', {
             method: 'POST',
             headers: {
@@ -378,7 +394,7 @@
                 original_text: originalText,
                 time_seconds: time,
                 mistakes: errorCount,
-                text_id: document.getElementById('textId').value || null
+                text_id: textId
             })
         })
         .then(response => response.json())
@@ -405,8 +421,8 @@
         return cookieValue;
     }
 
-    // Основная логика: отслеживаем каждый введённый символ
-    document.getElementById('textInput').addEventListener('input', function(e) {
+    // Обработка ввода
+    document.getElementById('textInput').addEventListener('input', function (e) {
         if (!isTestRunning && startTime === null) {
             startTest();
         }
@@ -415,26 +431,26 @@
         const oldLength = currentText.length;
         const newLength = newValue.length;
 
-        // Пользователь удаляет символ
         if (newLength < oldLength) {
-            // Удаление не уменьшает totalErrors — ошибка уже была!
-            // Но мы очищаем hasTypedChar для новых позиций
+            // Удаление: обрезаем состояние
             currentText = newValue;
             hasTypedChar = hasTypedChar.slice(0, newLength);
+            hasError = hasError.slice(0, newLength);
             updateTextDisplay();
             return;
         }
 
-        // Пользователь добавляет символ
+        // Добавление символов
         if (newLength > oldLength && newLength <= originalText.length) {
-            const newChar = newValue[newLength - 1];
-            const expectedChar = originalText[newLength - 1];
+            const pos = newLength - 1;
+            const newChar = newValue[pos];
+            const expectedChar = originalText[pos];
 
-            // Фиксируем, что этот символ был введён
-            hasTypedChar[newLength - 1] = true;
+            hasTypedChar[pos] = true;
 
-            // Если символ неверный — фиксируем ошибку НАВСЕГДА
-            if (newChar !== expectedChar) {
+            // Фиксируем ошибку только один раз
+            if (newChar !== expectedChar && !hasError[pos]) {
+                hasError[pos] = true;
                 totalErrors++;
             }
         }
@@ -442,21 +458,17 @@
         currentText = newValue;
         updateTextDisplay();
 
-        // Завершаем тест, как только набрано СТОЛЬКО ЖЕ символов, сколько в оригинале
+        // Завершение теста
         if (currentText.length === originalText.length) {
             finishTest();
         }
     });
 
-    document.getElementById('textInput').addEventListener('keydown', function(e) {
+    // Блокировка Tab
+    document.getElementById('textInput').addEventListener('keydown', function (e) {
         if (e.key === 'Tab') {
             e.preventDefault();
         }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('textInput').focus();
-        updateTextDisplay();
     });
 </script>
 {% endblock %}
