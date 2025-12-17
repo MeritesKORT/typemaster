@@ -9,7 +9,6 @@ from .models import TextSample, TypingTestResult
 
 def home(request):
     """Главная страница с выбором настроек"""
-    # Статистика для отображения
     total_tests = TypingTestResult.objects.count()
     avg_wpm = TypingTestResult.objects.aggregate(Avg('wpm'))['wpm__avg'] or 0
     best_wpm = TypingTestResult.objects.aggregate(Max('wpm'))['wpm__max'] or 0
@@ -34,14 +33,35 @@ def typing_test(request):
         text = text_sample.text
         text_id = text_sample.id
     else:
-        # Дефолтные тексты если нет в базе
         default_texts = {
-            ('easy', 'ru'): "Привет! Это тест скорости печати. Начните вводить этот текст как можно быстрее.",
-            ('medium', 'ru'): "Программирование - это искусство создания инструкций для компьютера. Каждая строка кода важна.",
-            ('hard', 'ru'): "Квантовые компьютеры используют принципы квантовой механики для выполнения вычислений.",
-            ('easy', 'en'): "The quick brown fox jumps over the lazy dog. This sentence uses every letter.",
-            ('medium', 'en'): "Python is a popular programming language known for its simplicity and readability.",
-            ('hard', 'en'): "Machine learning algorithms can identify patterns in data and make predictions.",
+            ('easy', 'ru'): "Кот сидит на окне. Солнце светит ярко. Девочка читает книгу. Мальчик играет с"
+            "машинкой. В саду растут цветы и яблоки. Птицы поют весело. Мама готовит обед. Папа чинит велосипед."
+            "Все счастливы.",
+            ('medium', 'ru'): "Эффективное управление временем - ключ к продуктивности. Вместо того чтобы"
+            "пытаться сделать всё сразу, разумнее расставлять приоритеты и делить большие задачи на маленькие"
+            "шаги. Метод «Помодоро», например, предлагает работать 25 минут без отвлечений, а затем делать короткий"
+            "перерыв. Такой подход помогает сохранять концентрацию и избегать выгорания. Важно также уметь говорить"
+            "«нет» лишним просьбам и защищать своё расписание. Помните: отдых — не роскошь, а необходимая часть рабочего"
+            "процесса.",
+            ('hard', 'ru'): "Современные квантовые компьютеры используют принцип суперпозиции и квантовой запутанности"
+            "для выполнения вычислений, недоступных классическим системам. Алгоритм Шора, например, способен факторизовать"
+            "большие числа экспоненциально быстрее, чем любой известный классический алгоритм, что ставит под угрозу безопасность"
+            "криптографических протоколов, основанных на RSA. В то же время, декогеренция остаётся главным препятствием на пути к"
+            "созданию масштабируемых квантовых процессоров. Исследователи из лабораторий Google, IBM и IonQ активно работают над"
+            "коррекцией квантовых ошибок, применяя топологические коды и сверхпроводящие кубиты, охлаждённые до температур, близких"
+            "к абсолютному нулю. Несмотря на прогресс, практическое применение fault-tolerant quantum computing всё ещё находится на"
+            "горизонте следующего десятилетия.",
+            ('easy', 'en'): "The sun is bright. A dog runs in the park. Birds fly high. Anna drinks tea."
+            "Tom plays with a ball. Flowers bloom in spring. It is a happy day.",
+            ('medium', 'en'): "Learning to type quickly takes practice and patience. It’s important to keep"
+            "your fingers on the home row and avoid looking at the keyboard. Many people improve their speed"
+            "by using online typing tutors or playing typing games. Consistency matters more than speed at"
+            "first—accuracy builds confidence and reduces errors over time.",
+            ('hard', 'en'): "Quantum entanglement describes a phenomenon where particles become intrinsically"
+            "linked, such that the state of one instantly influences the other—regardless of distance. This non-local"
+            "correlation, famously called “spooky action at a distance” by Einstein, defies classical intuition but has"
+            "been repeatedly confirmed through Bell test experiments. Harnessing entanglement is essential for quantum"
+            "cryptography, teleportation protocols, and error-resistant quantum computing architectures.",
         }
         text = default_texts.get((difficulty, language), "Начните печатать этот текст.")
         text_id = None
