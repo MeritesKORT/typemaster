@@ -1,29 +1,31 @@
 let startTime = null;
 let timerInterval = null;
 let isTestRunning = false;
-let totalErrors = 0;
-let hasTypedChar = [];
-let hasError = [];
+
 let originalText = '';
 let currentText = '';
 let saveResultUrl = '';
+
+// === ЧЕСТНАЯ СТАТИСТИКА ===
+const stats = {
+    totalTyped: 0,
+    correct: 0,
+    mistakes: 0
+};
 
 document.addEventListener('DOMContentLoaded', function () {
     const originalField = document.getElementById('originalText');
     const urlField = document.getElementById('saveResultUrl');
     const textInput = document.getElementById('textInput');
 
-    if (originalField) {
-        originalText = originalField.value;
-    }
-    if (urlField) {
-        saveResultUrl = urlField.value;
-    }
+    if (originalField) originalText = originalField.value;
+    if (urlField) saveResultUrl = urlField.value;
 
     if (textInput) {
         textInput.focus();
+        textInput.addEventListener('keydown', handleKeydown);
         textInput.addEventListener('input', handleInput);
-        textInput.addEventListener('keydown', function (e) {
+        textInput.addEventListener('keydown', e => {
             if (e.key === 'Tab') e.preventDefault();
         });
     }
@@ -31,29 +33,32 @@ document.addEventListener('DOMContentLoaded', function () {
     updateTextDisplay();
 });
 
+// ======================
+// CONTROL
+// ======================
 function startTest() {
     if (!isTestRunning) {
-        startTime = new Date();
+        startTime = Date.now();
         isTestRunning = true;
-        document.getElementById('textInput')?.focus();
+
         const btn = document.getElementById('startBtn');
         if (btn) {
             btn.innerHTML = '<i class="fas fa-pause"></i> Пауза';
             btn.onclick = pauseTest;
         }
+
         timerInterval = setInterval(updateTimer, 100);
     }
 }
 
 function pauseTest() {
-    if (isTestRunning) {
-        clearInterval(timerInterval);
-        isTestRunning = false;
-        const btn = document.getElementById('startBtn');
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-play"></i> Продолжить';
-            btn.onclick = startTest;
-        }
+    clearInterval(timerInterval);
+    isTestRunning = false;
+
+    const btn = document.getElementById('startBtn');
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-play"></i> Продолжить';
+        btn.onclick = startTest;
     }
 }
 
@@ -61,18 +66,19 @@ function restartTest() {
     clearInterval(timerInterval);
     isTestRunning = false;
     startTime = null;
-    totalErrors = 0;
-    hasTypedChar = [];
-    hasError = [];
+
     currentText = '';
+    stats.totalTyped = 0;
+    stats.correct = 0;
+    stats.mistakes = 0;
 
     const textInput = document.getElementById('textInput');
     if (textInput) textInput.value = '';
 
-    document.getElementById('timer')?.textContent = '0.0';
-    document.getElementById('wpm')?.textContent = '0';
-    document.getElementById('accuracy')?.textContent = '100%';
-    document.getElementById('errors')?.textContent = '0';
+    document.getElementById('timer').textContent = '0.0';
+    document.getElementById('wpm').textContent = '0';
+    document.getElementById('accuracy').textContent = '100%';
+    document.getElementById('errors').textContent = '0';
 
     const btn = document.getElementById('startBtn');
     if (btn) {
@@ -80,33 +86,79 @@ function restartTest() {
         btn.onclick = startTest;
     }
 
-    document.getElementById('resultsModal')?.style.display = 'none';
+    document.getElementById('resultsModal').style.display = 'none';
     updateTextDisplay();
 }
 
-function updateTimer() {
-    if (!startTime || !isTestRunning) return;
-
-    const currentTime = new Date();
-    const elapsed = (currentTime - startTime) / 1000;
-    document.getElementById('timer')?.textContent = elapsed.toFixed(1);
-
-    const charsTyped = currentText.length;
-    const wpm = elapsed > 0 ? Math.round((charsTyped / 5 / elapsed) * 60) : 0;
-    document.getElementById('wpm')?.textContent = wpm;
-
-    let correct = 0;
-    for (let i = 0; i < charsTyped && i < originalText.length; i++) {
-        if (hasTypedChar[i] && currentText[i] === originalText[i]) {
-            correct++;
-        }
+// ======================
+// INPUT LOGIC
+// ======================
+function handleKeydown(e) {
+    if (!isTestRunning && !startTime && e.key.length === 1) {
+        startTest();
     }
-    const accuracy = charsTyped > 0 ? Math.round((correct / charsTyped) * 100) : 100;
 
-    document.getElementById('accuracy')?.textContent = accuracy + '%';
-    document.getElementById('errors')?.textContent = totalErrors;
+    if (e.key === 'Backspace') {
+        currentText = currentText.slice(0, -1);
+        updateTextDisplay();
+    }
 }
 
+function handleInput(e) {
+    const value = e.target.value;
+
+    if (value.length <= currentText.length) {
+        e.target.value = currentText;
+        return;
+    }
+
+    const pos = currentText.length;
+    const typedChar = value[pos];
+    const expectedChar = originalText[pos];
+
+    currentText += typedChar;
+
+    stats.totalTyped++;
+
+    if (typedChar === expectedChar) {
+        stats.correct++;
+    } else {
+        stats.mistakes++;
+    }
+
+    updateTextDisplay();
+
+    if (currentText.length === originalText.length) {
+        finishTest();
+    }
+}
+
+// ======================
+// METRICS
+// ======================
+function updateTimer() {
+    if (!isTestRunning || !startTime) return;
+
+    const elapsed = (Date.now() - startTime) / 1000;
+    document.getElementById('timer').textContent = elapsed.toFixed(1);
+
+    const minutes = elapsed / 60;
+    const wpm = minutes > 0
+        ? Math.round((stats.correct / 5) / minutes)
+        : 0;
+
+    const accuracy = stats.totalTyped > 0
+        ? Math.round((stats.correct / stats.totalTyped) * 100)
+        : 100;
+
+    document.getElementById('wpm').textContent = wpm;
+    document.getElementById('accuracy').textContent = accuracy + '%';
+    document.getElementById('errors').textContent = stats.mistakes;
+}
+
+// ======================
+// UI
+// ======================
 function updateTextDisplay() {
     const display = document.getElementById('textToType');
     if (!display) return;
@@ -114,49 +166,53 @@ function updateTextDisplay() {
     let html = '';
     for (let i = 0; i < originalText.length; i++) {
         if (i < currentText.length) {
-            if (hasTypedChar[i] && currentText[i] === originalText[i]) {
-                html += `<span class="typed-text">${originalText[i]}</span>`;
-            } else {
-                html += `<span class="error-char">${originalText[i]}</span>`;
-            }
+            html += currentText[i] === originalText[i]
+                ? `<span class="typed-text">${originalText[i]}</span>`
+                : `<span class="error-char">${originalText[i]}</span>`;
         } else if (i === currentText.length) {
             html += `<span class="current-char">${originalText[i]}</span>`;
         } else {
             html += `<span class="text-to-type">${originalText[i]}</span>`;
         }
     }
+
     display.innerHTML = html;
 }
 
+// ======================
+// FINISH
+// ======================
 function finishTest() {
     clearInterval(timerInterval);
     isTestRunning = false;
 
-    const endTime = new Date();
-    const elapsed = (endTime - startTime) / 1000;
-    const charsTyped = currentText.length;
-    const wpm = elapsed > 0 ? Math.round((charsTyped / 5 / elapsed) * 60) : 0;
+    const elapsed = (Date.now() - startTime) / 1000;
+    const minutes = elapsed / 60;
 
-    let correctChars = 0;
-    for (let i = 0; i < originalText.length; i++) {
-        if (hasTypedChar[i] && currentText[i] === originalText[i]) {
-            correctChars++;
-        }
-    }
-    const accuracy = Math.round((correctChars / originalText.length) * 100);
+    const wpm = minutes > 0
+        ? Math.round((stats.correct / 5) / minutes)
+        : 0;
 
-    document.getElementById('finalWPM')?.textContent = wpm;
-    document.getElementById('finalAccuracy')?.textContent = accuracy + '%';
-    document.getElementById('finalTime')?.textContent = elapsed.toFixed(1);
-    document.getElementById('finalErrors')?.textContent = totalErrors;
-    document.getElementById('resultsModal')?.style.display = 'flex';
+    const accuracy = stats.totalTyped > 0
+        ? Math.round((stats.correct / stats.totalTyped) * 100)
+        : 100;
 
-    saveResult(wpm, accuracy, elapsed, totalErrors);
+    document.getElementById('finalWPM').textContent = wpm;
+    document.getElementById('finalAccuracy').textContent = accuracy + '%';
+    document.getElementById('finalTime').textContent = elapsed.toFixed(1);
+    document.getElementById('finalErrors').textContent = stats.mistakes;
+
+    document.getElementById('resultsModal').style.display = 'flex';
+
+    saveResult(wpm, accuracy, elapsed, stats.mistakes);
 }
 
-function saveResult(wpm, accuracy, time, errorCount) {
+// ======================
+// SAVE
+// ======================
+function saveResult(wpm, accuracy, time, mistakes) {
     const textIdElem = document.getElementById('textId');
-    const textId = textIdElem ? textIdElem.value || null : null;
+    const textId = textIdElem ? textIdElem.value : null;
 
     fetch(saveResultUrl, {
         method: 'POST',
@@ -168,68 +224,19 @@ function saveResult(wpm, accuracy, time, errorCount) {
             typed_text: currentText,
             original_text: originalText,
             time_seconds: time,
-            mistakes: errorCount,
+            mistakes,
             text_id: textId
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Результат сохранён:', data);
-    })
-    .catch(error => {
-        console.error('Ошибка при сохранении результата:', error);
     });
 }
 
 function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) {
+            return decodeURIComponent(c.substring(name.length + 1));
         }
     }
-    return cookieValue;
-}
-
-function handleInput(e) {
-    if (!isTestRunning && startTime === null) {
-        startTest();
-    }
-
-    const newValue = e.target.value;
-    const oldLength = currentText.length;
-    const newLength = newValue.length;
-
-    if (newLength < oldLength) {
-        currentText = newValue;
-        hasTypedChar = hasTypedChar.slice(0, newLength);
-        hasError = hasError.slice(0, newLength);
-        updateTextDisplay();
-        return;
-    }
-
-    if (newLength > oldLength && newLength <= originalText.length) {
-        const pos = newLength - 1;
-        const newChar = newValue[pos];
-        const expectedChar = originalText[pos];
-
-        hasTypedChar[pos] = true;
-
-        if (newChar !== expectedChar && !hasError[pos]) {
-            hasError[pos] = true;
-            totalErrors++;
-        }
-    }
-
-    currentText = newValue;
-    updateTextDisplay();
-
-    if (currentText.length === originalText.length) {
-        finishTest();
-    }
+    return null;
 }
