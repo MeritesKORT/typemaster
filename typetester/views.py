@@ -56,7 +56,7 @@ def typing_test(request):
             ('medium', 'en'): "Learning to type quickly takes practice and patience. It’s important to keep"
             "your fingers on the home row and avoid looking at the keyboard. Many people improve their speed"
             "by using online typing tutors or playing typing games. Consistency matters more than speed at"
-            "first—accuracy builds confidence and reduces errors over time.",
+            "first-accuracy builds confidence and reduces errors over time.",
             ('hard', 'en'): "Quantum entanglement describes a phenomenon where particles become intrinsically"
             "linked, such that the state of one instantly influences the other—regardless of distance. This non-local"
             "correlation, famously called “spooky action at a distance” by Einstein, defies classical intuition but has"
